@@ -6,7 +6,7 @@ const sheetsConfig = {
       {
         id: process.env.VISIT_H_H,
         name: 'Visa-H_H',
-        countries: ['Thailand', ' Malaysia', ' Indonesia', 'Azerbaijan', 'Singapore', 'Hong-Kong', 'Maldives']
+        countries: ['Thailand', 'Malaysia', 'Indonesia', 'Azerbaijan', 'Singapore', 'Hong-Kong', 'Maldives']
       }
     ]
   },
