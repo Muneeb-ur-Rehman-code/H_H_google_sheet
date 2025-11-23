@@ -1,5 +1,4 @@
 const { google } = require('googleapis');
-const path = require('path');
 require('dotenv').config();
 
 class GoogleSheetsService {
@@ -11,10 +10,29 @@ class GoogleSheetsService {
 
   async initialize() {
     try {
-      const keyPath = path.resolve(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+      let credentials;
       
+      // Check if we have base64 encoded key (for production/Vercel)
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64) {
+        const base64Key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
+        const jsonKey = Buffer.from(base64Key, 'base64').toString('utf8');
+        credentials = JSON.parse(jsonKey);
+        console.log('Using base64 encoded credentials');
+      } 
+      // Fallback to file path (for local development)
+      else if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+        const path = require('path');
+        const keyPath = path.resolve(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+        credentials = require(keyPath);
+        console.log('Using file-based credentials');
+      } 
+      else {
+        throw new Error('No Google service account credentials found');
+      }
+
+      // Initialize auth with credentials object
       this.auth = new google.auth.GoogleAuth({
-        keyFile: keyPath,
+        credentials: credentials, // Use credentials object instead of keyFile
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
       });
 
@@ -49,7 +67,7 @@ class GoogleSheetsService {
       // Append the data to the sheet
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:J', // Changed from A:I to A:J (10 columns)
+        range: 'Sheet1!A:J',
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
@@ -70,7 +88,7 @@ class GoogleSheetsService {
       // Check if headers exist
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: 'Sheet1!A1:J1' // Changed from A1:I1 to A1:J1 (10 columns)
+        range: 'Sheet1!A1:J1'
       });
 
       // If no headers, create them
@@ -90,7 +108,7 @@ class GoogleSheetsService {
 
         await this.sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: 'Sheet1!A1:J1', // Changed from A1:I1 to A1:J1
+          range: 'Sheet1!A1:J1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
             values: headers
@@ -99,82 +117,10 @@ class GoogleSheetsService {
 
         console.log('Headers created successfully');
         return true;
-      } else {
-        console.log('Headers already exist');
-        return false;
       }
-    } catch (error) {
-      // If error is because sheet doesn't exist, try to create the sheet first
-      if (error.message && error.message.includes('Unable to parse range')) {
-        console.log('Sheet might not exist, attempting to write headers anyway...');
-        
-        const headers = [[
-          'Timestamp',
-          'Name',
-          'Email',
-          'Phone',
-          'Address',
-          'Desired Country',
-          'Visa Type',
-          'Degree Level',
-          'Urgency',
-          'Additional Notes'
-        ]];
-
-        try {
-          await this.sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: 'Sheet1!A1:J1',
-            valueInputOption: 'USER_ENTERED',
-            requestBody: {
-              values: headers
-            }
-          });
-          console.log('Headers created successfully on new sheet');
-          return true;
-        } catch (updateError) {
-          console.error('Error creating headers on new sheet:', updateError);
-          return false;
-        }
-      }
-      
-      console.error('Error checking/creating headers:', error);
       return false;
-    }
-  }
-
-  // Optional: Add a method to ensure the sheet exists
-  async ensureSheetExists(spreadsheetId, sheetName = 'Sheet1') {
-    try {
-      const response = await this.sheets.spreadsheets.get({
-        spreadsheetId,
-        fields: 'sheets.properties.title'
-      });
-
-      const sheetExists = response.data.sheets.some(
-        sheet => sheet.properties.title === sheetName
-      );
-
-      if (!sheetExists) {
-        // Create the sheet if it doesn't exist
-        await this.sheets.spreadsheets.batchUpdate({
-          spreadsheetId,
-          requestBody: {
-            requests: [{
-              addSheet: {
-                properties: {
-                  title: sheetName
-                }
-              }
-            }]
-          }
-        });
-        console.log(`Sheet '${sheetName}' created successfully`);
-      }
-
-      return true;
     } catch (error) {
-      console.error('Error ensuring sheet exists:', error);
+      console.error('Error checking/creating headers:', error);
       return false;
     }
   }
