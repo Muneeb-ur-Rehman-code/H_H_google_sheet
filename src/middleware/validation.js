@@ -8,8 +8,7 @@ const applicationValidationRules = () => {
     body('address').trim().notEmpty().withMessage('Address is required'),
     body('desiredCountry').trim().notEmpty().withMessage('Desired country is required'),
     body('visaType').isIn(['study', 'visit', 'Study', 'Visit']).withMessage('Visa type must be either study or visit'),
-    body('urgency').trim().notEmpty().withMessage('Urgency is required'),
-    body('degreeLevel').trim().notEmpty().withMessage('Degree Level is required')
+    body('urgency').trim().notEmpty().withMessage('Urgency is required')
   ];
 };
 
