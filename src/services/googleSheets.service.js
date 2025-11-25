@@ -32,7 +32,7 @@ class GoogleSheetsService {
 
       // Initialize auth with credentials object
       this.auth = new google.auth.GoogleAuth({
-        credentials: credentials, // Use credentials object instead of keyFile
+        credentials: credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets']
       });
 
@@ -49,7 +49,7 @@ class GoogleSheetsService {
       // First ensure headers exist
       await this.createHeadersIfNeeded(spreadsheetId);
       
-      // Prepare the row data
+      // Prepare the row data - now includes otherCountryInterested
       const timestamp = new Date().toISOString();
       const values = [[
         timestamp,
@@ -58,16 +58,17 @@ class GoogleSheetsService {
         data.phone,
         data.address,
         data.desiredCountry,
+        data.otherCountryInterested || '', // New field
         data.visaType,
         data.degreeLevel || '',
         data.urgency,
         data.additionalNotes || ''
       ]];
 
-      // Append the data to the sheet
+      // Append the data to the sheet - updated range to K
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:J',
+        range: 'Sheet1!A:K',
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
@@ -85,10 +86,10 @@ class GoogleSheetsService {
 
   async createHeadersIfNeeded(spreadsheetId) {
     try {
-      // Check if headers exist
+      // Check if headers exist - updated range to K
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: 'Sheet1!A1:J1'
+        range: 'Sheet1!A1:K1'
       });
 
       // If no headers, create them
@@ -100,6 +101,7 @@ class GoogleSheetsService {
           'Phone',
           'Address',
           'Desired Country',
+          'Other Country Interested', // New header
           'Visa Type',
           'Degree Level',
           'Urgency',
@@ -108,7 +110,7 @@ class GoogleSheetsService {
 
         await this.sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: 'Sheet1!A1:J1',
+          range: 'Sheet1!A1:K1',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
             values: headers
@@ -118,6 +120,40 @@ class GoogleSheetsService {
         console.log('Headers created successfully');
         return true;
       }
+      
+      // Check if we need to add the new column header (for existing sheets)
+      const existingHeaders = response.data.values[0];
+      if (existingHeaders.length === 10 && !existingHeaders.includes('Other Country Interested')) {
+        // Need to update headers to include new column
+        console.log('Updating headers to include new field...');
+        
+        const newHeaders = [[
+          'Timestamp',
+          'Name',
+          'Email',
+          'Phone',
+          'Address',
+          'Desired Country',
+          'Other Country Interested',
+          'Visa Type',
+          'Degree Level',
+          'Urgency',
+          'Additional Notes'
+        ]];
+
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: 'Sheet1!A1:K1',
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: newHeaders
+          }
+        });
+
+        console.log('Headers updated with new field');
+        return true;
+      }
+      
       return false;
     } catch (error) {
       console.error('Error checking/creating headers:', error);
