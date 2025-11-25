@@ -58,17 +58,17 @@ class GoogleSheetsService {
         data.phone,
         data.address,
         data.desiredCountry,
-        data.otherCountryInterested || '', // New field
+        data.otherCountryInterested || '',
         data.visaType,
         data.degreeLevel || '',
         data.urgency,
         data.additionalNotes || ''
       ]];
 
-      // Append the data to the sheet - updated range to K
+      // Append the data to the sheet - use proper range format
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A:K',
+        range: 'Sheet1!A1:K1',
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
@@ -86,7 +86,7 @@ class GoogleSheetsService {
 
   async createHeadersIfNeeded(spreadsheetId) {
     try {
-      // Check if headers exist - updated range to K
+      // Check if headers exist
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId,
         range: 'Sheet1!A1:K1'
@@ -101,7 +101,7 @@ class GoogleSheetsService {
           'Phone',
           'Address',
           'Desired Country',
-          'Other Country Interested', // New header
+          'Other Country Interested',
           'Visa Type',
           'Degree Level',
           'Urgency',
@@ -123,7 +123,7 @@ class GoogleSheetsService {
       
       // Check if we need to add the new column header (for existing sheets)
       const existingHeaders = response.data.values[0];
-      if (existingHeaders.length === 10 && !existingHeaders.includes('Other Country Interested')) {
+      if (existingHeaders.length < 11 || !existingHeaders.includes('Other Country Interested')) {
         // Need to update headers to include new column
         console.log('Updating headers to include new field...');
         
