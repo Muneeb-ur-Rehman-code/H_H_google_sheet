@@ -68,7 +68,7 @@ class GoogleSheetsService {
       // Append the data to the sheet - use proper range format
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: 'Sheet1!A1:K1',
+        range: 'Sheet1!A:J',
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
@@ -89,7 +89,7 @@ class GoogleSheetsService {
       // Check if headers exist
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: 'Sheet1!A1:K1'
+        range: 'Sheet1!A:J'
       });
 
       // If no headers, create them
@@ -110,7 +110,7 @@ class GoogleSheetsService {
 
         await this.sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: 'Sheet1!A1:K1',
+          range: 'Sheet1!A:J',
           valueInputOption: 'USER_ENTERED',
           requestBody: {
             values: headers
